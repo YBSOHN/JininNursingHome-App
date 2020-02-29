@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:background="#FFFFFF"
+        android:ems="10"
+        android:orientation="vertical"
+        android:paddingLeft="20dp"
+        android:textSize="20sp">
+
+        <TextView
+            android:id="@+id/et_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="55dp"
+            android:ems="10"
+            android:fontFamily="sans-serif-black"
+            android:text="Tiger Gym"
+            android:textColor="#F54914"
+            android:textSize="60sp" />
+
+        <TextView
+            android:layout_width="370dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:height="1dp" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_centerInParent="true"
+        android:background="#aaa"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+
+        <TextView
+            android:id="@+id/et_head"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:fontFamily="sans-serif-black"
+            android:text="Activity Bus Schedule"
+            android:textColor="#1E1E1E"
+            android:textSize="25sp" />
+
+        <ScrollView
+            android:id="@+id/SCROLLER_ID"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="vertical"
+            android:fillViewport="true">
+
+            <TextView
+                android:id="@+id/et_body"
+                android:scrollbars = "vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="Activity buses will leave school at 5:10 pm on the following days in April: 1, 2, 3, 4, 5, 8, 9, 10, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 29 and 30. Please note that we will have LATE buses due to home matches on April 3, 10, 17 and 24."
+                android:textColor="#BE1E1E1E"
+                android:textSize="20sp" />
+
+        </ScrollView>
+
+
+
+    </LinearLayout>
+
+
+</LinearLayout>

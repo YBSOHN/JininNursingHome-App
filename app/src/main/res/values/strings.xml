@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ProximityContent</string>
+    <string name="SERVER_HOST">http://13.209.74.71</string>
+</resources>
