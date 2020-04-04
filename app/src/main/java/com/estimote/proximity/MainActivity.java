@@ -10,15 +10,19 @@ import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.estimote.mustard.rx_goodness.rx_requirements_wizard.RequirementsWizardFactory;
 import com.estimote.proximity.estimote.ProximityContentManager;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 
 //
@@ -28,14 +32,20 @@ import java.util.concurrent.LinkedBlockingDeque;
 public class MainActivity extends AppCompatActivity {
 
     private ProximityContentManager proximityContentManager;
-    Article article;
-    TextView et_auditorium, et_entrance, et_gym;
+    Location location;
     boolean process = true;
     NotificationManager notificationManager;
     public LinkedBlockingDeque<String> queue = new LinkedBlockingDeque();
 
+    public LocationMetaAdapter myadapter;
+    ListView lv_item;
+    ArrayList<LocationMeta> metaArrayList;
+
+    public static String HOST;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        HOST = getResources().getString(R.string.SERVER_HOST);
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -43,22 +53,46 @@ public class MainActivity extends AppCompatActivity {
 
         this.notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        et_auditorium = findViewById(R.id.et_auditorium);
-        et_entrance = findViewById(R.id.et_entrance);
-        et_gym = findViewById(R.id.et_gym);
 
-        et_auditorium.setOnClickListener(view -> {
-            queue.push("1d9141470c04e7f17e9091a66414d21d");
-        });
-        et_entrance.setOnClickListener(view -> {
-            queue.push("");
-        });
-        et_gym.setOnClickListener(view -> {
-            queue.push("");
+        lv_item = findViewById(R.id.lv_item);
+        Thread thread = new Thread(() -> {
+            try {
+                metaArrayList = Location.getNameList();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
-        article = new Article();
+        thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
+
+        myadapter = new LocationMetaAdapter(getApplicationContext(), R.layout.item, metaArrayList);
+        lv_item.setAdapter(myadapter);
+
+        lv_item.setOnItemClickListener((parent, view, position, id) -> {
+            Thread thread1 = new Thread(() -> {
+                try {
+                    ShowInfo(metaArrayList.get(position).id);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+
+            thread1.start();
+            try {
+                thread1.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+
+        location = new Location();
 
         RequirementsWizardFactory
                 .createEstimoteRequirementsWizard()
@@ -76,9 +110,6 @@ public class MainActivity extends AppCompatActivity {
                             Log.e("app", "requirements error: " + throwable);
                             return null;
                         });
-
-        buildNotification("test", "hi");
-
 
         new Thread(() -> {
             while (true) {
@@ -100,7 +131,14 @@ public class MainActivity extends AppCompatActivity {
                         continue;
                     }
                     beacon_id = proximityContentManager.queue.take();
-                    notificationManager.notify(1, buildNotification(article.getNotificationHead(beacon_id), article.getNotificationBody(beacon_id)));
+                    while (!proximityContentManager.queue.isEmpty()) {
+                        beacon_id = proximityContentManager.queue.take();
+                    }
+                    Notification notification = buildNotification(beacon_id);
+                    if (notification != null) {
+                        notificationManager.notify(1, notification);
+                    }
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -140,9 +178,11 @@ public class MainActivity extends AppCompatActivity {
 
     void ShowInfo(String id) {
         try {
-            String name = article.getName(id);
-            String subject = article.getSubject(id);
-            String info = article.getInfo(id);
+            JSONObject json = location.getData(id);
+
+            String name = json.getString("name");
+            String subject = json.getString("subject");
+            String info = json.getString("info");
 
             Intent intent = new Intent(getApplicationContext(), ContentActivity.class);
             intent.putExtra("name", name);
@@ -151,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, 1001);
             process = false;
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
     }
 
@@ -161,21 +201,42 @@ public class MainActivity extends AppCompatActivity {
         process = true;
     }
 
-    private Notification buildNotification(String title, String text) {
+    private Notification buildNotification(String beacon_id) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             NotificationChannel contentChannel = new NotificationChannel(
                     "content_channel", "Things near you", NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(contentChannel);
         }
 
+        JSONObject json = location.getData(beacon_id);
+        if (json == null) {
+            return null;
+        }
+        String name = null, subject = null, info = null, head = null, body = null;
+        try {
+            name = json.getString("name");
+            subject = json.getString("subject");
+            info = json.getString("info");
+            head = json.getString("notification_head");
+            body = json.getString("notification_body");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+        Intent intent = new Intent(this, ContentActivity.class);
+        intent.putExtra("name", name);
+        intent.putExtra("subject", subject);
+        intent.putExtra("info", info);
+
         return new NotificationCompat.Builder(this, "content_channel")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(title)
-                .setContentText(text)
+                .setContentTitle(head)
+                .setContentText(body)
                 .setOngoing(true)
-                .setVibrate(new long[] { 300, 100 })
+                .setVibrate(new long[]{300, 100})
                 .setContentIntent(PendingIntent.getActivity(this, 0,
-                        new Intent(this, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT))
+                        intent, PendingIntent.FLAG_UPDATE_CURRENT))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .build();
     }
